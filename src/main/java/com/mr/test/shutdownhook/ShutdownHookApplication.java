@@ -1,47 +1,51 @@
 package com.mr.test.shutdownhook;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.util.StopWatch;
-
 import javax.annotation.PostConstruct;
 import java.util.Scanner;
 
 @SpringBootApplication
 public class ShutdownHookApplication {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(ShutdownHookApplication.class);
+	
 	private static final Object lock = new Object();
 
-	private final StopWatch stopWatch = new StopWatch();
-
+	private final Long startTime;
+	
 	public ShutdownHookApplication() {
 
-		stopWatch.start();
+		startTime = System.currentTimeMillis();
+		
 	}
 
 	@PostConstruct
 	public void setUp()	{
-
-		System.out.println("Setting up ShudownApp....");
+		
+		LOGGER.info("Setting up ShudownApp....");
 
 		Runtime.getRuntime().addShutdownHook(
 				new Thread(() -> {
+					
+					LOGGER.info("Running Shutdown Hook");
+					
+					LOGGER.info("Waiting for the lock to be released");
 
-					System.out.println("Running Shutdown Hook");
-
-					System.out.println("Waiting for the lock to be released");
-
+					Long elapsedTime;
+					
 					synchronized (lock)	{
+						
+						LOGGER.info("Lock released!!");
 
-						stopWatch.stop();
-
-						System.out.println("Lock released!!");
+						elapsedTime = System.currentTimeMillis() - this.startTime;
 					}
-
-					System.out.println("Shutdown Hook Finished");
-
-					System.out.println("Elapsed time: " + stopWatch.getTotalTimeMillis() + " ms");
-
+					
+					LOGGER.info("Elapsed time: {}ms", elapsedTime);
+					
+					LOGGER.info("Shutdown Hook Finished");
 				})
 		);
 
@@ -50,24 +54,24 @@ public class ShutdownHookApplication {
 	public static void main(String[] args) throws InterruptedException {
 
 		SpringApplication.run(ShutdownHookApplication.class, args);
-
-		System.out.println("ShudownApp Initialized!!");
+		
+		LOGGER.info("ShudownApp Initialized!!");
 
 		synchronized (lock) {
 
 			Scanner scanner = new Scanner(System.in);
-
-			System.out.println("Waiting for input: ");
+			
+			LOGGER.info("Waiting for input: ");
 
 			String input = scanner.nextLine();
-
-			System.out.println("Input received: " + input);
-
-			System.out.println("Graceful Shutdown, wait two seconds to release lock");
-
+			
+			LOGGER.info("Input received: {}",input);
+			
+			LOGGER.info("Graceful Shutdown, wait two seconds to release lock");
+			
 			Thread.sleep(2000L);
-
-			System.out.println("Releasing lock...");
+			
+			LOGGER.info("Releasing lock...");
 		}
 
 	}
